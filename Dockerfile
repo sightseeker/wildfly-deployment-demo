@@ -1,5 +1,5 @@
 # ベースとなるイメージ
-FROM jboss/wildfly:10.1.0.Final
+FROM jboss/wildfly:11.0.0.Final
 
 # 環境変数
 ENV JBOSS_HOME=/opt/jboss/wildfly
