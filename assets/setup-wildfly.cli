@@ -1,8 +1,24 @@
-embed-server --server-config=standalone-full.xml
-batch
+embed-server --server-config=standalone-full-ha.xml
+
+# Install MySQL Connector
 module add --name=com.mysql --resources=/tmp/mysql-connector-java-5.1.34.jar --dependencies=javax.api,javax.transaction.api
+
+# Configure DataSources
 /subsystem=datasources/jdbc-driver=mysql:add(driver-name=mysql, driver-module-name=com.mysql, driver-class-name=com.mysql.jdbc.Driver)
 data-source add --name=demo-ds --jndi-name=java:jboss/datasources/mysql/demo --driver-name=mysql --connection-url=jdbc:mysql://mysqlserver:3306/demo\
 --enabled=true --password=demo --user-name=demo
-run-batch
+
+# Configure Infinispan Subsystem
+#/subsystem=messaging-activemq:remove()
+/subsystem=infinispan/cache-container=web/replicated-cache=repli:add(mode="SYNC", remote-timeout=330000)
+/subsystem=infinispan/cache-container=web/replicated-cache=repli/locking=LOCKING:add(isolation="REPEATABLE_READ")
+/subsystem=infinispan/cache-container=web/replicated-cache=repli/transaction=TRANSACTION:add(mode=BATCH)
+/subsystem=infinispan/cache-container=web/replicated-cache=repli/eviction=EVICTION:add(strategy="NONE", max-entries="-1")
+/subsystem=infinispan/cache-container=web/replicated-cache=repli/expiration=EXPIRATION:add(max-idle=-1)
+/subsystem=infinispan/cache-container=web:write-attribute(name=default-cache, value="repli")
+
+# Configure Messaging Subsystem
+/subsystem=messaging-activemq/server=default/pooled-connection-factory=activemq-ra:write-attribute(name=rebalance-connections, value=true)
+
+
 stop-embedded-server
